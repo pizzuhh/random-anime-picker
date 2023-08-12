@@ -170,8 +170,8 @@ async fn main()
     {
         Ok(name) => 
         {
-            id = GetUserId(name);
-        }, Err(e) => println!("{:?}" e)
+            id = GetUserId(name).await;
+        }, Err(e) => println!("{:?}", e)
     }
     
     let wtf = GetAnimeIds(id).await;
