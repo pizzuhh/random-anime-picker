@@ -6,16 +6,16 @@ use rand::*;
 use rand::seq::SliceRandom;
 
 //get user id
-const query1: &str = r#"
+const QUERY1: &str = r#"
 query($id:Int,$name:String){User(id:$id,name:$name){id name previousNames{name updatedAt}avatar{large}bannerImage about isFollowing isFollower donatorTier donatorBadge createdAt moderatorRoles isBlocked bans options{profileColor restrictMessagesToFollowing}mediaListOptions{scoreFormat}statistics{anime{count meanScore standardDeviation minutesWatched episodesWatched genrePreview:genres(limit:10,sort:COUNT_DESC){genre count}}manga{count meanScore standardDeviation chaptersRead volumesRead genrePreview:genres(limit:10,sort:COUNT_DESC){genre count}}}stats{activityHistory{date amount level}}favourites{anime{edges{favouriteOrder node{id type status(version:2)format isAdult bannerImage title{userPreferred}coverImage{large}startDate{year}}}}manga{edges{favouriteOrder node{id type status(version:2)format isAdult bannerImage title{userPreferred}coverImage{large}startDate{year}}}}characters{edges{favouriteOrder node{id name{userPreferred}image{large}}}}staff{edges{favouriteOrder node{id name{userPreferred}image{large}}}}studios{edges{favouriteOrder node{id name}}}}}}
 "#;
 
 //get anime list
-const query2: &str = r#"
+const QUERY2: &str = r#"
 query($userId:Int,$userName:String,$type:MediaType){MediaListCollection(userId:$userId,userName:$userName,type:$type){lists{name isCustomList isCompletedList:isSplitCompletedList entries{...mediaListEntry}}user{id name avatar{large}mediaListOptions{scoreFormat rowOrder animeList{sectionOrder customLists splitCompletedSectionByFormat theme}mangaList{sectionOrder customLists splitCompletedSectionByFormat theme}}}}}fragment mediaListEntry on MediaList{id mediaId status score progress progressVolumes repeat priority private hiddenFromStatusLists customLists advancedScores notes updatedAt startedAt{year month day}completedAt{year month day}media{id title{userPreferred romaji english native}coverImage{extraLarge large}type format status(version:2)episodes volumes chapters averageScore popularity isAdult countryOfOrigin genres bannerImage startDate{year month day}}}
 "#;
 
-const query3:&str = r#"
+const QUERY3:&str = r#"
    query ($id: Int) {
   Media (id: $id, type: ANIME) {
     id
@@ -28,7 +28,7 @@ const query3:&str = r#"
 }
 "#;
 
-const url: &str = "https://graphql.anilist.co";
+const URL: &str = "https://graphql.anilist.co";
 
 async fn GetAnimeInfo(id: &i64)
 {
@@ -59,8 +59,8 @@ async fn GetAnimeInfo(id: &i64)
 
 
     let client = Client::new();
-    let json = json!({"query": query3, "variables": {"id": id}});
-    let resp = client.post("https://graphql.anilist.co/")
+    let json = json!({"query": QUERY3, "variables": {"id": id}});
+    let resp = client.post(URL)
         .header("Content-Type", "application/json")
         .body(json.to_string())
         .send()
@@ -69,8 +69,7 @@ async fn GetAnimeInfo(id: &i64)
         .text()
         .await;
     let result:Json = serde_json::from_str(&resp.unwrap()).unwrap();
-    let link = format!("anilist.co/anime/{}", id);
-    let na = String::from("N/A");
+    let link = format!("https://anilist.co/anime/{}", id);
     //println!("anime -> {}\nromaji -> {}\nenglish -> {}\nnative -> {}", link, result.data.media.title.romaji, result.data.media.title.english, result.data.media.title.native);
     println!("anime -> {}\nromaji -> {}\nenglish -> {}\nnative -> {}", link,
         if let Some(romaji) = result.data.media.title.romaji {romaji} else {"N/A".to_string()},
@@ -112,9 +111,9 @@ async fn GetAnimeIds(usrid: i32) -> Vec<i64>
         id: i64
     }
     let cl = Client::new();
-    let qer = json!({"query": query2, "variables":{"type":"ANIME","userId":usrid}});
+    let qer = json!({"query": QUERY2, "variables":{"type":"ANIME","userId":usrid}});
 
-    let resp = cl.post(url)
+    let resp = cl.post(URL)
         .header("Content-Type", "application/json")
         .body(qer.to_string())
         .send()
@@ -151,8 +150,8 @@ async fn GetUserId(name: String) -> i32
         id: i32
     }
     let cl = Client::new();
-    let qer = json!({"query":query1, "variables":{"name": name}});
-    let resp = cl.post(url)
+    let qer = json!({"query":QUERY1, "variables":{"name": name}});
+    let resp = cl.post(URL)
         .header("Content-Type", "application/json")
         .body(qer.to_string())
         .send()
