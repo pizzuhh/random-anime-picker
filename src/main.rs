@@ -51,9 +51,9 @@ async fn GetAnimeInfo(id: &i64)
     #[derive(Serialize, Deserialize, Debug)]
     struct Title
     {
-        english: String,
-        native: String,
-        romaji: String
+        english: Option<String>,
+        native: Option<String>,
+        romaji: Option<String>
     }
 
 
@@ -62,7 +62,6 @@ async fn GetAnimeInfo(id: &i64)
     let json = json!({"query": query3, "variables": {"id": id}});
     let resp = client.post("https://graphql.anilist.co/")
         .header("Content-Type", "application/json")
-        .header("Accept", "application/json")
         .body(json.to_string())
         .send()
         .await
@@ -71,7 +70,12 @@ async fn GetAnimeInfo(id: &i64)
         .await;
     let result:Json = serde_json::from_str(&resp.unwrap()).unwrap();
     let link = format!("anilist.co/anime/{}", id);
-    println!("anime -> {}\nromaji -> {}\nenglish -> {}\nnative -> {}", link, result.data.media.title.romaji, result.data.media.title.english, result.data.media.title.native);
+    let na = String::from("N/A");
+    //println!("anime -> {}\nromaji -> {}\nenglish -> {}\nnative -> {}", link, result.data.media.title.romaji, result.data.media.title.english, result.data.media.title.native);
+    println!("anime -> {}\nromaji -> {}\nenglish -> {}\nnative -> {}", link,
+        if let Some(romaji) = result.data.media.title.romaji {romaji} else {"N/A".to_string()},
+        if let Some(english) = result.data.media.title.english {english} else {"N/A".to_string()},
+        if let Some(native) = result.data.media.title.native {native.to_string()} else {"N/A".to_string()});
 }
 
 async fn GetAnimeIds(usrid: i32) -> Vec<i64>
@@ -176,5 +180,6 @@ async fn main()
     
     let wtf = GetAnimeIds(id).await;
     let rnd = wtf.choose(&mut rand::thread_rng());
+    println!("{}", rnd.unwrap());
     GetAnimeInfo(rnd.unwrap()).await;
 }
