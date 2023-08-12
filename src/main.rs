@@ -139,10 +139,10 @@ async fn GetUserId(name: String) -> i32
     struct Wrap
     {
         #[serde(rename="User")]
-        user: usr
+        user: Usr
     }
     #[derive(Serialize, Deserialize, Debug)]
-    struct usr
+    struct Usr
     {
         id: i32
     }
@@ -163,8 +163,17 @@ async fn GetUserId(name: String) -> i32
 #[tokio::main]
 async fn main()
 {
-    let id = GetUserId("pizuhh".to_string()).await;
-    //println!("{id}");
+    let mut rl = rustyline::DefaultEditor::new();
+    let username = rl.expect("error reading input").readline("anilist username: ");
+    let mut id: i32 = 0;
+    match username
+    {
+        Ok(name) => 
+        {
+            id = GetUserId(name);
+        }, Err(e) => println!("{:?}" e)
+    }
+    
     let wtf = GetAnimeIds(id).await;
     let rnd = wtf.choose(&mut rand::thread_rng());
     GetAnimeInfo(rnd.unwrap()).await;
