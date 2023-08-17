@@ -24,6 +24,7 @@ const QUERY3:&str = r#"
       english
       native
     }
+    format
   }
 }
 "#;
@@ -46,7 +47,8 @@ async fn GetAnimeInfo(id: &i64)
     #[derive(Serialize, Deserialize, Debug)]
     struct Media
     {
-        title: Title
+        title: Title,
+        format: String
     }
     #[derive(Serialize, Deserialize, Debug)]
     struct Title
@@ -71,10 +73,10 @@ async fn GetAnimeInfo(id: &i64)
     let result:Json = serde_json::from_str(&resp.unwrap()).unwrap();
     let link = format!("https://anilist.co/anime/{}", id);
     //println!("anime -> {}\nromaji -> {}\nenglish -> {}\nnative -> {}", link, result.data.media.title.romaji, result.data.media.title.english, result.data.media.title.native);
-    println!("anime -> {}\nromaji -> {}\nenglish -> {}\nnative -> {}", link,
+    println!("anime -> {}\nromaji -> {}\nenglish -> {}\nnative -> {}\nformat -> {}", link,
         if let Some(romaji) = result.data.media.title.romaji {romaji} else {"N/A".to_string()},
         if let Some(english) = result.data.media.title.english {english} else {"N/A".to_string()},
-        if let Some(native) = result.data.media.title.native {native.to_string()} else {"N/A".to_string()});
+        if let Some(native) = result.data.media.title.native {native.to_string()} else {"N/A".to_string()}, result.data.media.format);
 }
 
 async fn GetAnimeIds(usrid: i32) -> Vec<i64>
@@ -108,7 +110,13 @@ async fn GetAnimeIds(usrid: i32) -> Vec<i64>
     struct Entr
     {
         #[serde(rename = "mediaId")]
-        id: i64
+        id: i64,
+        media: Media
+    }
+    #[derive(Serialize, Deserialize, Debug)]
+    struct Media
+    {
+        format: Option<String>
     }
     let cl = Client::new();
     let qer = json!({"query": QUERY2, "variables":{"type":"ANIME","userId":usrid}});
@@ -123,10 +131,16 @@ async fn GetAnimeIds(usrid: i32) -> Vec<i64>
         .await;
 
     let parsed: Json = serde_json::from_str(&resp.unwrap()).unwrap();
-    let mut ids: Vec<i64> = vec![0,0];
+    let mut ids: Vec<i64> = Vec::new();
     if let Some(list) = parsed.data.media_list_collection.lists.get(2)
     {
-        ids = list.entries.iter().map(|entry| entry.id).collect();
+        for ent in &list.entries
+        {
+            if ent.media.format == Some("TV".to_string()) || ent.media.format == Some("MOVIE".to_string())
+            {
+                ids.push(ent.id);
+            }
+        }
     }
     return ids;
 }
