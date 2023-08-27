@@ -18,3 +18,5 @@ There isn't pre-compiled binary for windows yet so you have to compile it yourse
 2. Download the repo (using ``git clone`` or download the source code from the [releases](https://github.com/pizzuhh/random-anime-picker/releases))
 3. Once you have everything set-upped run ``cargo build --release``
 4. CD into the binary directory ``cd .\target\release\``
+
+You can also use WSL(Windows subsystem for Linux)
