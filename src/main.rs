@@ -1,8 +1,8 @@
 use serde_json::*;
 use serde::*;
 use reqwest::*;
-use rustyline::*;
-use rand::*;
+//use rustyline::*;
+//use rand::*;
 use rand::seq::SliceRandom;
 
 //get user id
@@ -31,7 +31,7 @@ const QUERY3:&str = r#"
 
 const URL: &str = "https://graphql.anilist.co";
 
-async fn GetAnimeInfo(id: &i64)
+async fn get_anime_info(id: &i64)
 {
     #[derive(Serialize, Deserialize, Debug)]
     struct Json
@@ -58,8 +58,6 @@ async fn GetAnimeInfo(id: &i64)
         romaji: Option<String>
     }
 
-
-
     let client = Client::new();
     let json = json!({"query": QUERY3, "variables": {"id": id}});
     let resp = client.post(URL)
@@ -79,7 +77,7 @@ async fn GetAnimeInfo(id: &i64)
         if let Some(native) = result.data.media.title.native {native.to_string()} else {"N/A".to_string()}, result.data.media.format);
 }
 
-async fn GetAnimeIds(usrid: i32) -> Vec<i64>
+async fn get_anime_ids(usrid: i32) -> Vec<i64>
 {
 
     #[derive(Serialize, Deserialize, Debug)]
@@ -103,6 +101,7 @@ async fn GetAnimeIds(usrid: i32) -> Vec<i64>
     #[derive(Serialize, Deserialize, Debug)]
     struct Lists
     {
+        name: String,
         entries: Vec<Entr>
     }
 
@@ -132,20 +131,27 @@ async fn GetAnimeIds(usrid: i32) -> Vec<i64>
 
     let parsed: Json = serde_json::from_str(&resp.unwrap()).unwrap();
     let mut ids: Vec<i64> = Vec::new();
-    if let Some(list) = parsed.data.media_list_collection.lists.get(2)
+    /*
+    hardcoding like parsed.data.media_list_collection.lists.get(2) is not good!
+    */
+    for i in parsed.data.media_list_collection.lists
     {
-        for ent in &list.entries
+        if i.name == "Planning"
         {
-            if ent.media.format == Some("TV".to_string()) || ent.media.format == Some("MOVIE".to_string())
+            for ent in i.entries
             {
-                ids.push(ent.id);
+                if ent.media.format == Some("TV".to_string()) || ent.media.format == Some("MOVIE".to_string())
+                {
+                    ids.push(ent.id);
+                }
             }
         }
     }
     return ids;
+    
 }
 
-async fn GetUserId(name: String) -> i32
+async fn get_user_id(name: String) -> i32
 {
     #[derive(Serialize, Deserialize, Debug)]
     struct ID
@@ -180,19 +186,18 @@ async fn GetUserId(name: String) -> i32
 #[tokio::main]
 async fn main()
 {
-    let mut rl = rustyline::DefaultEditor::new();
+    let rl = rustyline::DefaultEditor::new();
     let username = rl.expect("error reading input").readline("anilist username: ");
     let mut id: i32 = 0;
     match username
     {
         Ok(name) => 
         {
-            id = GetUserId(name).await;
+            id = get_user_id(name).await;
         }, Err(e) => println!("{:?}", e)
     }
-    
-    let wtf = GetAnimeIds(id).await;
+    let wtf = get_anime_ids(id).await;
     let rnd = wtf.choose(&mut rand::thread_rng());
-    println!("{}", rnd.unwrap());
-    GetAnimeInfo(rnd.unwrap()).await;
+    println!("anime id -> {}", rnd.unwrap());
+    get_anime_info(rnd.unwrap()).await;
 }
